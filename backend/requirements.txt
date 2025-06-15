@@ -1,0 +1,32 @@
+# Core Flask dependencies
+flask==2.3.3
+flask-cors==4.0.0
+langgraph
+
+# Google APIs
+google-api-python-client
+google-auth
+google-auth-oauthlib
+google-generativeai
+
+# Data processing
+pandas
+numpy
+
+# HTTP and requests
+requests
+
+# Environment and configuration
+python-dotenv
+pydantic
+
+# Rate limiting
+flask-limiter
+
+# Logging
+loguru
+
+# Development tools (optional)
+black
+flake8
+isort
