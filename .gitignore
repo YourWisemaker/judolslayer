@@ -286,6 +286,7 @@ logs
 api_keys.txt
 secrets.json
 config/secrets.py
+credentials.json
 
 # Database files
 *.db
