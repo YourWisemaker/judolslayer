@@ -51,6 +51,12 @@ export function SpamResults({ data, isDryRun }: SpamResultsProps) {
   };
 
   const filteredComments = spamComments.filter((comment: SpamComment) => {
+    // When not in dry run mode (remove spam clicked), show only moderated rejected messages
+    if (!isDryRun) {
+      return comment.analysis.is_spam && comment.analysis.recommended_action === 'delete';
+    }
+    
+    // In dry run mode, use normal filtering
     if (filterType === 'spam') return comment.analysis.is_spam;
     if (filterType === 'clean') return !comment.analysis.is_spam;
     return true;
@@ -118,7 +124,7 @@ export function SpamResults({ data, isDryRun }: SpamResultsProps) {
             </div>
           )}
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">
                 {data.processing_stats.total_comments}
@@ -132,6 +138,12 @@ export function SpamResults({ data, isDryRun }: SpamResultsProps) {
               <div className="text-sm text-gray-600">Spam Detected</div>
             </div>
             <div className="text-center">
+              <div className="text-2xl font-bold text-orange-600">
+                {data.processing_stats.high_confidence_spam || 0}
+              </div>
+              <div className="text-sm text-gray-600">High Confidence Gambling</div>
+            </div>
+            <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
                 {data.processing_stats.total_comments - data.processing_stats.spam_detected}
               </div>
@@ -139,7 +151,7 @@ export function SpamResults({ data, isDryRun }: SpamResultsProps) {
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">
-                {isDryRun ? 0 : data.processing_stats.deleted_count}
+                {isDryRun ? (data.processing_stats.high_confidence_spam || 0) : (data.processing_stats.deleted_count || 0)}
               </div>
               <div className="text-sm text-gray-600">
                 {isDryRun ? 'Would Delete' : 'Deleted'}
@@ -166,10 +178,17 @@ export function SpamResults({ data, isDryRun }: SpamResultsProps) {
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value as any)}
                   className="input-field text-sm"
+                  disabled={!isDryRun}
                 >
-                  <option value="all">All Comments ({spamComments.length})</option>
-                  <option value="spam">Spam Only ({spamComments.filter((c: SpamComment) => c.analysis.is_spam).length})</option>
-                  <option value="clean">Clean Only ({cleanComments.length})</option>
+                  {!isDryRun ? (
+                    <option value="spam">Moderated Rejected ({filteredComments.length})</option>
+                  ) : (
+                    <>
+                      <option value="all">All Comments ({spamComments.length})</option>
+                      <option value="spam">Spam Only ({spamComments.filter((c: SpamComment) => c.analysis.is_spam).length})</option>
+                      <option value="clean">Clean Only ({cleanComments.length})</option>
+                    </>
+                  )}
                 </select>
               </div>
               <div>
@@ -209,7 +228,7 @@ export function SpamResults({ data, isDryRun }: SpamResultsProps) {
       <div className="card">
         <div className="card-header">
           <h3 className="text-lg font-semibold text-gray-900">
-            Comments ({filteredComments.length})
+            {!isDryRun ? 'Moderated Rejected Comments' : 'Comments'} ({filteredComments.length})
           </h3>
         </div>
         <div className="card-body p-0">

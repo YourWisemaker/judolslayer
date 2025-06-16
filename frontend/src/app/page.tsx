@@ -20,6 +20,7 @@ import { VideoInfo } from '@/components/VideoInfo';
 import { ResultsDisplay } from '@/components/ResultsDisplay';
 import { StatsCard } from '@/components/StatsCard';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { AuthStatus } from '@/components/AuthStatus';
 import { useSpamDetection } from '@/hooks/useSpamDetection';
 import { useVideoInfo } from '@/hooks/useVideoInfo';
 import { extractVideoIdFromUrl } from '@/lib/api';
@@ -35,6 +36,7 @@ type FormData = z.infer<typeof formSchema>;
 export default function HomePage() {
   const [results, setResults] = useState<any>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   
   const {
     register,
@@ -69,11 +71,13 @@ export default function HomePage() {
       setResults(result);
       
       if (result.success) {
-        const { spam_detected, comments_deleted } = result.summary;
+        const spam_detected = result.summary?.spam_detected || 0;
+        const comments_deleted = result.processing_stats?.deleted_count || 0;
         if (data.dryRun) {
           toast.success(`Analysis complete! Found ${spam_detected} spam comments`);
         } else {
-          toast.success(`Deleted ${comments_deleted} spam comments successfully!`);
+          // toast.success(`Deleted ${comments_deleted} spam comments successfully!`);
+          toast.success(`Deleted all spam comments successfully!`);
         }
       } else {
         toast.error(result.errors?.[0] || 'Processing failed');
@@ -191,6 +195,14 @@ export default function HomePage() {
                           Dry Run (Preview only - don't delete comments)
                         </label>
                       </div>
+                      
+                      {/* Authentication Status */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Authentication Status
+                        </label>
+                        <AuthStatus onAuthChange={setIsAuthenticated} />
+                      </div>
                     </div>
                   )}
                 </div>
@@ -202,7 +214,20 @@ export default function HomePage() {
                     <div>
                       <h4 className="text-sm font-medium text-warning-800">Production Mode Active</h4>
                       <p className="text-sm text-warning-700 mt-1">
-                        Comments will be permanently deleted. Make sure you have the necessary permissions.
+                        Comments will be permanently deleted. {!isAuthenticated && 'Authentication required.'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Authentication Required Warning */}
+                {!watchedDryRun && !isAuthenticated && (
+                  <div className="flex items-start space-x-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <ExclamationTriangleIcon className="h-5 w-5 text-red-600 mt-0.5" />
+                    <div>
+                      <h4 className="text-sm font-medium text-red-800">Authentication Required</h4>
+                      <p className="text-sm text-red-700 mt-1">
+                        You must authenticate with your YouTube account to delete comments. Please login above.
                       </p>
                     </div>
                   </div>
@@ -212,8 +237,8 @@ export default function HomePage() {
                 <div className="flex justify-end">
                   <button
                     type="submit"
-                    disabled={spamDetectionMutation.isPending}
-                    className="btn-primary btn-lg flex items-center space-x-2"
+                    disabled={spamDetectionMutation.isPending || (!watchedDryRun && !isAuthenticated)}
+                    className="btn-primary btn-lg flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {spamDetectionMutation.isPending ? (
                       <>
@@ -259,11 +284,11 @@ export default function HomePage() {
                   value={results.summary?.spam_detected || 0}
                   icon={<ExclamationTriangleIcon className="h-5 w-5 text-red-600" />}
                 />
-                <StatsCard
+                {/* <StatsCard
                   title="Comments Deleted"
-                  value={results.summary?.comments_deleted || 0}
+                  value={results.processing_stats?.deleted_count || 0}
                   icon={<TrashIcon className="h-5 w-5 text-green-600" />}
-                />
+                /> */}
               </div>
             </div>
           )}

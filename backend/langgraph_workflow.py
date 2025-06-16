@@ -1,5 +1,5 @@
 from langgraph.graph import Graph, StateGraph, END
-from typing import TypedDict, List, Dict, Any
+from typing import TypedDict, List, Dict, Any, Optional
 import google.generativeai as genai
 from googleapiclient.discovery import build
 import logging
@@ -20,6 +20,7 @@ class SpamDetectionState(TypedDict):
     deleted_comments: List[str]
     errors: List[str]
     processing_stats: Dict[str, Any]
+    oauth_handler: Optional[Any]
 
 class SpamDetectionWorkflow:
     def __init__(self):
@@ -100,24 +101,29 @@ class SpamDetectionWorkflow:
                 try:
                     # Enhanced prompt for better spam detection
                     prompt = f"""
-Analyze this YouTube comment for online gambling/betting spam (judol/judi online).
+You are an expert content moderator specializing in detecting online gambling/betting spam in Indonesian comments.
 
+Analyze this comment for gambling/betting spam characteristics:
 Comment: "{comment['text']}"
-Author: {comment['author']}
-Likes: {comment['like_count']}
 
-Detection criteria:
-1. Gambling keywords: judi, slot, casino, gacor, maxwin, zeus, pragmatic, gates of olympus
-2. Promotional patterns: bonus, deposit, daftar, link alternatif, situs terpercaya
-3. Suspicious formats: WORD+NUMBERS (GACOR77, ZEUS123)
-4. Call-to-action phrases: "klik link", "daftar sekarang", "bonus new member"
-5. Emoji patterns commonly used in spam
-6. Repetitive or template-like content
+IMPORTANT: Only flag as gambling spam if the comment is clearly promoting or discussing online gambling activities. Regular words like "main" (play), "bagus" (good), "test" should NOT trigger spam detection unless used in clear gambling context.
 
-Consider context:
-- Comment relevance to video content
-- Author's comment history pattern
-- Engagement metrics
+Consider these criteria:
+1. Specific Gambling Keywords: judi, slot casino, gacor, maxwin, zeus slot, pragmatic play, gates of olympus, bonus deposit, putrispin, jackpot, ironslot
+2. Gambling Actions: main slot, main judi, pola gacor, wd lancar, cuan besar, modal receh
+3. Promotional Language: daftar slot, link alternatif, klik link slot, bonus new member, info slot, promosi slot
+4. Gambling Site Names: dora88, sinar88, jpdewa, pintuslot, luxury777, nagaslot, qq77, momo4d
+5. Context: The comment must be clearly related to gambling/betting activities, not just containing common words
+
+Examples of NOT spam:
+- "test wah bagus" (just testing/commenting)
+- "main game ini seru" (playing regular games)
+- "bagus banget videonya" (complimenting content)
+
+Examples of spam:
+- "main slot di situs gacor"
+- "daftar sekarang bonus 100%"
+- "pola zeus maxwin"
 
 Respond with JSON:
 {{
@@ -132,7 +138,50 @@ Respond with JSON:
 """
                     
                     response = model.generate_content(prompt)
-                    analysis = json.loads(response.text)
+                    response_text = response.text.strip()
+                    
+                    # Try to extract JSON from response
+                    try:
+                        # Look for JSON block in response
+                        if '```json' in response_text:
+                            json_start = response_text.find('```json') + 7
+                            json_end = response_text.find('```', json_start)
+                            json_text = response_text[json_start:json_end].strip()
+                        elif '{' in response_text and '}' in response_text:
+                            json_start = response_text.find('{')
+                            json_end = response_text.rfind('}') + 1
+                            json_text = response_text[json_start:json_end]
+                        else:
+                            json_text = response_text
+                        
+                        analysis = json.loads(json_text)
+                    except json.JSONDecodeError:
+                        # Fallback: create analysis based on keywords
+                        text_lower = comment['text'].lower()
+                        gambling_keywords = [
+                            'judi', 'slot', 'casino', 'gacor', 'maxwin', 'maxxwin', 'zeus', 'pragmatic', 'gates of olympus', 
+                            'bonus deposit', 'putrispin', 'jackpot', 'ironslot', 'main slot', 'main judi', 'main di situs', 
+                            'pola gacor', 'tempat judi', 'selalu menang', 'wd lancar', 'cuan besar', 'modal receh',
+                            'gw jelasin pola', 'gk pernah pakek pola', 'daftar slot', 'link alternatif', 
+                            'langsung gas', 'auto cuan', 'jam hoki', 'gacor pol', 'dora88', 'sinar88', 'jpdewa',
+                            'pintuslot', 'luxury777', 'nagaslot', 'qq77', 'momo4d', 'situs judi', 'situs slot', 
+                            'klik link slot', 'daftar sekarang', 'bonus new member', 'info slot', 
+                            'promosi slot', 'akun slot', 'menang terus', 'deposit murah'
+                        ]
+                        detected_keywords = [kw for kw in gambling_keywords if kw in text_lower]
+                        
+                        is_spam = len(detected_keywords) > 0
+                        confidence = min(len(detected_keywords) * 0.3, 1.0)
+                        
+                        analysis = {
+                            'is_spam': is_spam,
+                            'confidence': confidence,
+                            'spam_type': 'gambling' if is_spam else 'clean',
+                            'reason': f"Keyword-based detection. Found: {detected_keywords}" if is_spam else "No gambling keywords detected",
+                            'detected_patterns': detected_keywords,
+                            'risk_level': 'high' if confidence > 0.7 else 'medium' if confidence > 0.3 else 'low',
+                            'recommended_action': 'delete' if confidence > 0.7 else 'review' if confidence > 0.3 else 'ignore'
+                        }
                     
                     analyzed_comment = {
                         **comment,
@@ -176,28 +225,37 @@ Respond with JSON:
     def filter_spam(self, state: SpamDetectionState) -> SpamDetectionState:
         """Filter and categorize spam comments"""
         try:
-            spam_comments = []
+            all_comments = []
+            spam_count = 0
+            high_confidence_spam_count = 0
             
             for comment in state['analyzed_comments']:
                 analysis = comment['analysis']
                 
-                # Filter based on confidence and risk level
-                if (analysis['is_spam'] and 
-                    analysis['confidence'] > 0.7 and 
-                    analysis['risk_level'] in ['high', 'critical']):
-                    
-                    spam_comments.append({
-                        **comment,
-                        'spam_category': analysis['spam_type'],
-                        'priority': self._calculate_priority(analysis),
-                        'action_recommended': analysis['recommended_action']
-                    })
+                # Add all comments to the list (both spam and clean)
+                processed_comment = {
+                    **comment,
+                    'spam_category': analysis['spam_type'],
+                    'priority': self._calculate_priority(analysis),
+                    'action_recommended': analysis['recommended_action']
+                }
+                
+                all_comments.append(processed_comment)
+                
+                # Count spam comments
+                if analysis['is_spam']:
+                    spam_count += 1
+                    # Count high-confidence gambling spam (what will actually be deleted)
+                    if (analysis['confidence'] > 0.7 and 
+                        analysis['spam_type'] == 'gambling'):
+                        high_confidence_spam_count += 1
             
             # Sort by priority (highest first)
-            spam_comments.sort(key=lambda x: x['priority'], reverse=True)
+            all_comments.sort(key=lambda x: x['priority'], reverse=True)
             
-            state['spam_comments'] = spam_comments
-            logger.info(f"Identified {len(spam_comments)} spam comments")
+            # Store all comments in spam_comments (this is what frontend expects)
+            state['spam_comments'] = all_comments
+            logger.info(f"Identified {spam_count} spam comments ({high_confidence_spam_count} high-confidence) out of {len(all_comments)} total")
             
         except Exception as e:
             error_msg = f"Error filtering spam: {str(e)}"
@@ -208,37 +266,99 @@ Respond with JSON:
         return state
     
     def delete_spam(self, state: SpamDetectionState) -> SpamDetectionState:
-        """Delete spam comments if not in dry run mode"""
-        deleted_comments = []
+        """Moderate spam comments if not in dry run mode using OAuth authentication"""
         
         if state['dry_run']:
             logger.info("Dry run mode - no comments will be deleted")
             state['deleted_comments'] = []
             return state
         
+        # Get OAuth handler from state
+        oauth_handler = state.get('oauth_handler')
+        logger.info(f"[WORKFLOW DEBUG] OAuth handler exists: {oauth_handler is not None}")
+        
+        if not oauth_handler:
+            error_msg = "OAuth handler not available for comment deletion"
+            logger.error(f"[WORKFLOW DEBUG] {error_msg}")
+            state['errors'].append(error_msg)
+            state['deleted_comments'] = []
+            return state
+            
+        logger.info("[WORKFLOW DEBUG] Checking OAuth authentication status...")
+        auth_status = oauth_handler.is_authenticated()
+        logger.info(f"[WORKFLOW DEBUG] OAuth authentication status: {auth_status}")
+        
+        if not auth_status:
+            error_msg = "OAuth authentication required for comment deletion"
+            logger.error(f"[WORKFLOW DEBUG] {error_msg}")
+            state['errors'].append(error_msg)
+            state['deleted_comments'] = []
+            return state
+        
+        # Get authenticated user's channel ID for ownership verification
+        user_info = oauth_handler.get_user_info()
+        if not user_info or not user_info.get('channel_id'):
+            error_msg = "Could not retrieve authenticated user's channel ID"
+            logger.error(f"[WORKFLOW DEBUG] {error_msg}")
+            state['errors'].append(error_msg)
+            state['deleted_comments'] = []
+            return state
+        
+        user_channel_id = user_info['channel_id']
+        logger.info(f"[WORKFLOW DEBUG] Authenticated user channel ID: {user_channel_id}")
+        
         try:
-            youtube = build('youtube', 'v3', developerKey=state['youtube_api_key'])
+            processed_comments = 0
             
             for comment in state['spam_comments']:
                 try:
-                    # Only delete high-confidence spam
-                    if (comment['analysis']['confidence'] > 0.8 and 
-                        comment['analysis']['risk_level'] == 'critical'):
+                    # Delete spam comments with high confidence (any type)
+                    # Also log what we're checking for debugging
+                    is_spam = comment['analysis']['is_spam']
+                    spam_type = comment['analysis']['spam_type']
+                    confidence = comment['analysis']['confidence']
+                    
+                    logger.info(f"[DELETE DEBUG] Comment {comment['id']}: is_spam={is_spam}, type={spam_type}, confidence={confidence}")
+                    
+                    # Process high-confidence spam of any type - use moderation for all comments
+                    if (is_spam and confidence > 0.7):
+                        logger.info(f"[MODERATE DEBUG] Attempting to moderate comment {comment['id']} (type: {spam_type}, confidence: {confidence})")
                         
-                        youtube.comments().delete(id=comment['id']).execute()
-                        deleted_comments.append(comment['id'])
-                        logger.info(f"Deleted spam comment: {comment['id']}")
+                        moderation_success = oauth_handler.moderate_comment(
+                            comment['id'], 
+                            moderation_status='rejected',
+                            ban_author=True  # Ban repeat spam offenders
+                        )
+                        if moderation_success:
+                            logger.info(f"Successfully moderated spam comment {comment['id']} as rejected and banned author")
+                            # Track moderated comments (treated as deleted for UI)
+                            if 'moderated_comments' not in state:
+                                state['moderated_comments'] = []
+                            state['moderated_comments'].append(comment['id'])
+                            logger.info(f"[STATE DEBUG] Added comment {comment['id']} to moderated_comments. Current list: {state['moderated_comments']}")
+                            logger.info(f"[STATE DEBUG] State keys: {list(state.keys())}")
+                            logger.info(f"[STATE DEBUG] moderated_comments length: {len(state['moderated_comments'])}")
+                        else:
+                            logger.info(f"Comment {comment['id']} could not be moderated (likely due to YouTube policy restrictions)")
                         
                         # Rate limiting
                         time.sleep(1)
+                        processed_comments += 1
+                    else:
+                        logger.info(f"[MODERATE DEBUG] Skipping comment {comment['id']}: not high-confidence spam (confidence: {confidence})")
                         
                 except Exception as e:
-                    error_msg = f"Failed to delete comment {comment['id']}: {str(e)}"
+                    error_msg = f"Failed to moderate comment {comment['id']}: {str(e)}"
                     logger.error(error_msg)
                     state['errors'].append(error_msg)
             
-            state['deleted_comments'] = deleted_comments
-            logger.info(f"Deleted {len(deleted_comments)} spam comments")
+            # Get moderated comments count
+            moderated_comments = state.get('moderated_comments', [])
+            
+            # No deleted comments - only moderated comments (treated as deleted for UI)
+            state['deleted_comments'] = []
+            logger.info(f"[WORKFLOW DEBUG] Processed {processed_comments} high-confidence spam comments")
+            logger.info(f"Successfully moderated {len(moderated_comments)} comments as rejected")
             
         except Exception as e:
             error_msg = f"Error in deletion process: {str(e)}"
@@ -251,20 +371,42 @@ Respond with JSON:
     def generate_report(self, state: SpamDetectionState) -> SpamDetectionState:
         """Generate processing report"""
         try:
+            logger.info(f"[GENERATE_REPORT DEBUG] Received state keys: {list(state.keys())}")
+            logger.info(f"[GENERATE_REPORT DEBUG] moderated_comments in state: {state.get('moderated_comments', 'NOT_FOUND')}")
+            logger.info(f"[GENERATE_REPORT DEBUG] moderated_comments length: {len(state.get('moderated_comments', []))}")
             total_comments = len(state['comments'])
             analyzed_comments = len(state['analyzed_comments'])
-            spam_detected = len(state['spam_comments'])
-            deleted_count = len(state['deleted_comments'])
+            
+            # Count only actual spam comments
+            actual_spam_comments = [c for c in state['spam_comments'] if c['analysis']['is_spam']]
+            spam_detected = len(actual_spam_comments)
+            
+            # Count high-confidence gambling spam (what would be deleted)
+            high_confidence_spam = [c for c in actual_spam_comments if 
+                                   c['analysis']['confidence'] > 0.7 and 
+                                   c['analysis']['spam_type'] == 'gambling']
+            high_confidence_count = len(high_confidence_spam)
+            
+            deleted_count = 0  # No deletions - only moderation
+            moderated_comments_list = state.get('moderated_comments', [])
+            moderated_count = len(moderated_comments_list)
+            total_actions = moderated_count  # Only moderated comments
+            
+            # Debug logging for moderated comments
+            logger.info(f"[REPORT DEBUG] deleted_count: {deleted_count}, moderated_count: {moderated_count}, total_actions: {total_actions}")
+            logger.info(f"[REPORT DEBUG] moderated_comments list: {moderated_comments_list}")
+            logger.info(f"[REPORT DEBUG] deleted_comments list: {state['deleted_comments']}")
             
             # Calculate statistics
             spam_rate = (spam_detected / total_comments * 100) if total_comments > 0 else 0
-            deletion_rate = (deleted_count / spam_detected * 100) if spam_detected > 0 else 0
+            high_confidence_rate = (high_confidence_count / spam_detected * 100) if spam_detected > 0 else 0
+            action_rate = (total_actions / high_confidence_count * 100) if high_confidence_count > 0 else 0
             
-            # Categorize spam types
+            # Categorize spam types (only for actual spam)
             spam_categories = {}
             risk_levels = {}
             
-            for comment in state['spam_comments']:
+            for comment in actual_spam_comments:
                 spam_type = comment['analysis']['spam_type']
                 risk_level = comment['analysis']['risk_level']
                 
@@ -275,16 +417,20 @@ Respond with JSON:
                 'total_comments': total_comments,
                 'analyzed_comments': analyzed_comments,
                 'spam_detected': spam_detected,
+                'high_confidence_spam': high_confidence_count,
                 'deleted_count': deleted_count,
+                'moderated_count': moderated_count,
+                'total_actions': total_actions,
                 'spam_rate_percent': round(spam_rate, 2),
-                'deletion_rate_percent': round(deletion_rate, 2),
+                'high_confidence_rate_percent': round(high_confidence_rate, 2),
+                'action_rate_percent': round(action_rate, 2),
                 'spam_categories': spam_categories,
                 'risk_levels': risk_levels,
                 'errors_count': len(state['errors']),
                 'processing_time': time.time()
             }
             
-            logger.info(f"Processing complete: {spam_detected} spam detected, {deleted_count} deleted")
+            logger.info(f"Processing complete: {spam_detected} spam detected ({high_confidence_count} high-confidence), {moderated_count} moderated as rejected")
             
         except Exception as e:
             error_msg = f"Error generating report: {str(e)}"
@@ -319,15 +465,19 @@ Respond with JSON:
         
         return priority
     
-    def run(self, initial_state: SpamDetectionState) -> SpamDetectionState:
+    def run(self, initial_state: SpamDetectionState, oauth_handler=None) -> SpamDetectionState:
         """Run the complete spam detection workflow"""
         # Initialize state with default values
         initial_state.setdefault('comments', [])
         initial_state.setdefault('analyzed_comments', [])
         initial_state.setdefault('spam_comments', [])
         initial_state.setdefault('deleted_comments', [])
+        initial_state.setdefault('moderated_comments', [])
         initial_state.setdefault('errors', [])
         initial_state.setdefault('processing_stats', {})
+        
+        # Store OAuth handler in state for deletion step
+        initial_state['oauth_handler'] = oauth_handler
         
         try:
             result = self.workflow.invoke(initial_state)
