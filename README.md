@@ -1,84 +1,97 @@
-# YouTube Spam Detection Tool
+# YouTube Spam Comment Remover
 
-An AI-powered tool to detect and remove spam comments from YouTube videos using Gemini AI, built with Flask backend and Next.js frontend.
+Sebuah alat bertenaga AI untuk mendeteksi dan menghapus komentar spam dari video YouTube menggunakan Gemini AI, dibangun dengan backend Flask dan frontend Next.js.
 
-## 🚀 Quick Start
+## 🚀 Memulai Cepat
 
-1. **Clone the repository**:
+1. **Clone repository**:
    ```bash
    git clone <repository-url>
    cd judolslayer
    ```
 
-2. **Set up the backend** (see [Backend Setup](#backend-setup))
-3. **Set up the frontend** (see [Frontend Setup](#frontend-setup))
-4. **Configure API keys** in environment files
-5. **Start both servers** and visit `http://localhost:3000`
+2. **Setup backend** (lihat [Setup Backend](#setup-backend))
+3. **Setup frontend** (lihat [Setup Frontend](#setup-frontend))
+4. **Konfigurasi API keys** di file environment
+5. **Jalankan kedua server** dan kunjungi `http://localhost:3000`
 
-## Features
+## Fitur
 
-- 🤖 **AI-Powered Detection**: Uses Google's Gemini AI (gemini-2.0-flash) for intelligent spam detection
-- 🎯 **Advanced Filtering**: Detects gambling, scam, promotional, and other types of spam
-- 🔍 **Dry Run Mode**: Preview what would be deleted before taking action
-- 📊 **Detailed Analytics**: View comprehensive statistics and analysis
-- 🚀 **Modern UI**: Beautiful, responsive interface built with Next.js and Tailwind CSS
-- 🔄 **Batch Processing**: Process multiple videos at once
-- 📤 **Export Results**: Download analysis results as JSON or CSV
-- ⚡ **Real-time Processing**: Live updates during processing
+- 🤖 **Deteksi Bertenaga AI**: Menggunakan Gemini AI Google (gemini-2.0-flash) untuk deteksi spam yang cerdas
+- 🎯 **Filter Lanjutan**: Mendeteksi judi, penipuan, promosi, dan jenis spam lainnya
+- 🔍 **Mode Dry Run**: Preview apa yang akan dihapus sebelum mengambil tindakan
+- 📊 **Analitik Detail**: Lihat statistik dan analisis komprehensif
+- 🚀 **UI Modern**: Interface yang indah dan responsif dibangun dengan Next.js dan Tailwind CSS
+- 🔄 **Pemrosesan Batch**: Proses beberapa video sekaligus
+- 📤 **Ekspor Hasil**: Download hasil analisis sebagai JSON atau CSV
+- ⚡ **Pemrosesan Real-time**: Update langsung selama pemrosesan
 
-## Architecture
+## Perbandingan Mode Operasi
+
+| Fitur | Mode Analisis/Dry Run | Mode Hapus |
+|-------|----------------------|------------|
+| **Tujuan** | Preview dan analisis | Hapus spam aktual |
+| **Keamanan** | ✅ Aman, tidak ada perubahan | ⚠️ Permanen, tidak bisa dibatalkan |
+| **Output** | Laporan deteksi spam | Komentar spam dihapus |
+| **Rekomendasi** | Selalu gunakan dulu | Gunakan setelah review |
+| **Risiko** | Tidak ada risiko | Risiko hapus komentar valid |
+| **Fungsi** | Identifikasi dan statistik | Moderasi aktual |
+| **Reversible** | ✅ Ya (tidak ada aksi) | ❌ Tidak (penghapusan permanen) |
+| **Ideal untuk** | Testing, review, analisis | Pembersihan final |
+
+## Arsitektur
 
 ### Backend (Flask + LangGraph)
-- **Flask**: RESTful API server
-- **LangGraph**: Workflow orchestration for complex spam detection logic
-- **Gemini AI**: Advanced language model for spam classification
-- **YouTube Data API**: Fetch and manage comments
-- **TensorFlow/PyTorch**: Additional ML capabilities (extensible)
+- **Flask**: Server API RESTful
+- **LangGraph**: Orkestrasi workflow untuk logika deteksi spam yang kompleks
+- **Gemini AI**: Model bahasa canggih untuk klasifikasi spam
+- **YouTube Data API**: Mengambil dan mengelola komentar
+- **TensorFlow/PyTorch**: Kemampuan ML tambahan (dapat diperluas)
 
 ### Frontend (Next.js)
-- **Next.js 14**: React framework with App Router
-- **TypeScript**: Type-safe development
-- **Tailwind CSS**: Utility-first styling
-- **React Query**: Data fetching and caching
-- **React Hook Form**: Form management with validation
-- **Heroicons**: Beautiful icons
+- **Next.js 14**: Framework React dengan App Router
+- **TypeScript**: Pengembangan yang type-safe
+- **Tailwind CSS**: Styling utility-first
+- **React Query**: Pengambilan data dan caching
+- **React Hook Form**: Manajemen form dengan validasi
+- **Heroicons**: Ikon yang indah
 
-## Prerequisites
+## Prasyarat
 
-- **Python 3.8+** with pip
-- **Node.js 18+** with npm
-- **YouTube Data API v3 key** from [Google Cloud Console](https://console.cloud.google.com/)
-- **Google AI (Gemini) API key** from [Google AI Studio](https://makersuite.google.com/)
-- **Git** for version control
+- **Python 3.8+** dengan pip
+- **Node.js 18+** dengan npm
+- **YouTube Data API v3 key** dari [Google Cloud Console](https://console.cloud.google.com/)
+- **Google AI (Gemini) API key** dari [Google AI Studio](https://makersuite.google.com/)
+- **Git** untuk version control
 
-### Getting API Keys
+### Mendapatkan API Keys
 
 1. **YouTube Data API v3**:
-   - Go to [Google Cloud Console](https://console.cloud.google.com/)
-   - Create a new project or select existing one
-   - Enable YouTube Data API v3
-   - Create credentials (API key)
-   - Restrict the key to YouTube Data API v3 for security
+   - Kunjungi [Google Cloud Console](https://console.cloud.google.com/)
+   - Buat project baru atau pilih yang sudah ada
+   - Aktifkan YouTube Data API v3
+   - Buat credentials (API key)
+   - Batasi key untuk YouTube Data API v3 demi keamanan
 
 2. **Google AI (Gemini) API**:
-   - Visit [Google AI Studio](https://makersuite.google.com/)
-   - Sign in with your Google account
-   - Create a new API key
-   - Copy the key for use in your environment file
+   - Kunjungi [Google AI Studio](https://makersuite.google.com/)
+   - Masuk dengan akun Google Anda
+   - Buat API key baru
+   - Salin key untuk digunakan di file environment Anda
 
-## Installation
+## Instalasi
 
-### Backend Setup
+### Setup Backend
 
-1. Navigate to the backend directory:
+1. Navigasi ke direktori backend:
 ```bash
 cd backend
 ```
 
-2. Create a virtual environment:
+2. Buat virtual environment:
 ```bash
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate  # Di Windows: venv\Scripts\activate
 ```
 
 3. Install dependencies:
@@ -86,12 +99,12 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. Create environment file:
+4. Buat file environment:
 ```bash
 cp .env.example .env
 ```
 
-5. Configure your `.env` file:
+5. Konfigurasi file `.env` Anda:
 ```env
 # API Keys (Required)
 YOUTUBE_API_KEY=your_youtube_api_key_here
@@ -112,22 +125,22 @@ RATE_LIMIT_PER_MINUTE=60
 LOG_LEVEL=INFO
 ```
 
-**Important**: 
-- Replace `your_youtube_api_key_here` with your actual YouTube Data API v3 key
-- Replace `your_gemini_api_key_here` with your actual Google AI (Gemini) API key
-- The SECRET_KEY has been automatically generated for security
-- Never commit your `.env` file to version control
+**Penting**: 
+- Ganti `your_youtube_api_key_here` dengan YouTube Data API v3 key Anda yang sebenarnya
+- Ganti `your_gemini_api_key_here` dengan Google AI (Gemini) API key Anda yang sebenarnya
+- SECRET_KEY telah dibuat secara otomatis untuk keamanan
+- Jangan pernah commit file `.env` Anda ke version control
 
-6. Run the Flask application:
+6. Jalankan aplikasi Flask:
 ```bash
 python app.py
 ```
 
-The backend will be available at `http://localhost:5000`
+Backend akan tersedia di `http://localhost:5000`
 
-### Frontend Setup
+### Setup Frontend
 
-1. Navigate to the frontend directory:
+1. Navigasi ke direktori frontend:
 ```bash
 cd frontend
 ```
@@ -137,38 +150,38 @@ cd frontend
 npm install
 ```
 
-3. Create environment file:
+3. Buat file environment:
 ```bash
 cp .env.local.example .env.local
 ```
 
-4. Configure your `.env.local` file:
+4. Konfigurasi file `.env.local` Anda:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:5000
 ```
 
-5. Run the development server:
+5. Jalankan development server:
 ```bash
 npm run dev
 ```
 
-The frontend will be available at `http://localhost:3000`
+Frontend akan tersedia di `http://localhost:3000`
 
 ## API Endpoints
 
 ### Backend API
 
 - `GET /api/health` - Health check
-- `POST /api/process-video` - Process video for spam detection
-- `POST /api/analyze-comment` - Analyze a single comment
-- `POST /api/video-info` - Get video information
-- `POST /api/batch-process` - Process multiple videos
+- `POST /api/process-video` - Proses video untuk deteksi spam
+- `POST /api/analyze-comment` - Analisis satu komentar
+- `POST /api/video-info` - Dapatkan informasi video
+- `POST /api/batch-process` - Proses beberapa video
 
-**Note**: All API keys are now configured via environment variables for enhanced security. No need to include them in API requests.
+**Catatan**: Semua API keys sekarang dikonfigurasi melalui environment variables untuk keamanan yang lebih baik. Tidak perlu menyertakannya dalam request API.
 
-### Request Examples
+### Contoh Request
 
-#### Process Video for Spam Detection
+#### Proses Video untuk Deteksi Spam
 ```bash
 curl -X POST http://localhost:5000/api/process-video \
   -H "Content-Type: application/json" \
@@ -179,7 +192,7 @@ curl -X POST http://localhost:5000/api/process-video \
   }'
 ```
 
-#### Analyze Single Comment
+#### Analisis Satu Komentar
 ```bash
 curl -X POST http://localhost:5000/api/analyze-comment \
   -H "Content-Type: application/json" \
@@ -188,63 +201,63 @@ curl -X POST http://localhost:5000/api/analyze-comment \
   }'
 ```
 
-## Usage
+## Penggunaan
 
-1. **Start the Application**:
-   - Ensure both backend and frontend servers are running
-   - Open `http://localhost:3000` in your browser
+1. **Jalankan Aplikasi**:
+   - Pastikan server backend dan frontend berjalan
+   - Buka `http://localhost:3000` di browser Anda
 
-2. **Enter Video Information**:
-   - Paste YouTube video ID or full URL
-   - Configure detection settings (API keys are automatically loaded from environment)
-   - Adjust advanced options if needed
+2. **Masukkan Informasi Video**:
+   - Paste YouTube video ID atau URL lengkap
+   - Konfigurasi pengaturan deteksi (API keys dimuat otomatis dari environment)
+   - Sesuaikan opsi lanjutan jika diperlukan
 
-3. **Run Analysis**:
-   - **Recommended**: Use "Dry Run" first to preview results without making changes
-   - Review the analysis and statistics
-   - If satisfied, disable "Dry Run" and click "Remove Spam" to delete detected spam comments
+3. **Jalankan Analisis**:
+   - **Direkomendasikan**: Gunakan "Dry Run" dulu untuk preview hasil tanpa membuat perubahan
+   - Review analisis dan statistik
+   - Jika puas, nonaktifkan "Dry Run" dan klik "Remove Spam" untuk menghapus komentar spam yang terdeteksi
 
-4. **Review Results**:
-   - View detailed statistics and confidence scores
-   - Filter comments by type (All, Spam, Clean)
-   - Sort by confidence, date, or risk level
-   - Export results for further analysis
+4. **Review Hasil**:
+   - Lihat statistik detail dan skor confidence
+   - Filter komentar berdasarkan tipe (All, Spam, Clean)
+   - Urutkan berdasarkan confidence, tanggal, atau level risiko
+   - Ekspor hasil untuk analisis lebih lanjut
 
-### ⚠️ Important Notes
+### ⚠️ Catatan Penting
 
-- **Always test with Dry Run first** to avoid accidentally deleting legitimate comments
-- **Spam removal is permanent** - deleted comments cannot be recovered
-- **Rate limits apply** - YouTube API has daily quotas
-- **Review results carefully** - AI detection may have false positives
+- **Selalu test dengan Dry Run dulu** untuk menghindari penghapusan komentar yang sah secara tidak sengaja
+- **Penghapusan spam bersifat permanen** - komentar yang dihapus tidak dapat dipulihkan
+- **Rate limits berlaku** - YouTube API memiliki kuota harian
+- **Review hasil dengan hati-hati** - deteksi AI mungkin memiliki false positives
 
-## Configuration
+## Konfigurasi
 
-### Spam Detection Settings
+### Pengaturan Deteksi Spam
 
-- **Confidence Threshold**: Minimum confidence level for spam classification (0.0-1.0)
-- **Risk Levels**: High, Medium, Low risk categorization
-- **Spam Types**: Gambling, Scam, Promotional, Offensive, etc.
-- **Dry Run**: Preview mode without actual deletion
+- **Confidence Threshold**: Level confidence minimum untuk klasifikasi spam (0.0-1.0)
+- **Risk Levels**: Kategorisasi risiko Tinggi, Sedang, Rendah
+- **Spam Types**: Judi, Penipuan, Promosi, Ofensif, dll.
+- **Dry Run**: Mode preview tanpa penghapusan aktual
 
-### Advanced Options
+### Opsi Lanjutan
 
-- **Max Comments**: Limit number of comments to process
-- **Include Replies**: Process comment replies
-- **Custom Patterns**: Add custom spam detection patterns
-- **Batch Processing**: Process multiple videos simultaneously
+- **Max Comments**: Batasi jumlah komentar yang diproses
+- **Include Replies**: Proses balasan komentar
+- **Custom Patterns**: Tambahkan pola deteksi spam kustom
+- **Batch Processing**: Proses beberapa video secara bersamaan
 
 ## Development
 
 ### Backend Development
 
 ```bash
-# Run with auto-reload
+# Jalankan dengan auto-reload
 python app.py
 
-# Run tests (if test files exist)
+# Jalankan tests (jika file test ada)
 python -m pytest tests/
 
-# Format code (install tools first: pip install black flake8)
+# Format code (install tools dulu: pip install black flake8)
 black .
 flake8 .
 ```
@@ -255,10 +268,10 @@ flake8 .
 # Development server
 npm run dev
 
-# Build for production
+# Build untuk production
 npm run build
 
-# Run production server
+# Jalankan production server
 npm start
 
 # Lint code
@@ -272,12 +285,12 @@ npm run type-check
 
 ### Backend (Flask)
 
-1. **Using Gunicorn**:
+1. **Menggunakan Gunicorn**:
 ```bash
 gunicorn -w 4 -b 0.0.0.0:5000 app:app
 ```
 
-2. **Using Docker**:
+2. **Menggunakan Docker**:
 ```dockerfile
 FROM python:3.9-slim
 WORKDIR /app
@@ -302,78 +315,78 @@ npm install -g vercel
 vercel
 ```
 
-## Security Considerations
+## Pertimbangan Keamanan
 
 - **API Keys**: 
-  - All API keys are managed via environment variables
-  - Never commit `.env` files to version control
-  - Use `.env.example` as a template for required variables
-  - `credentials.json` is automatically ignored by Git
-- **Secret Key**: Generate a secure Flask secret key for production
-- **Rate Limiting**: Implement proper rate limiting for production
-- **CORS**: Configure CORS properly for your domain
-- **Input Validation**: All inputs are validated and sanitized
-- **Error Handling**: Comprehensive error handling and logging
+  - Semua API keys dikelola melalui environment variables
+  - Jangan pernah commit file `.env` ke version control
+  - Gunakan `.env.example` sebagai template untuk variabel yang diperlukan
+  - `credentials.json` secara otomatis diabaikan oleh Git
+- **Secret Key**: Generate Flask secret key yang aman untuk production
+- **Rate Limiting**: Implementasikan rate limiting yang tepat untuk production
+- **CORS**: Konfigurasi CORS dengan benar untuk domain Anda
+- **Input Validation**: Semua input divalidasi dan disanitasi
+- **Error Handling**: Error handling dan logging yang komprehensif
 - **Git Security**: 
-  - Comprehensive `.gitignore` file protects sensitive data
-  - OAuth credentials and API keys are excluded from version control
-  - If you accidentally committed sensitive files, remove them from Git history
+  - File `.gitignore` yang komprehensif melindungi data sensitif
+  - OAuth credentials dan API keys dikecualikan dari version control
+  - Jika Anda tidak sengaja commit file sensitif, hapus dari Git history
 
-## Contributing
+## Kontribusi
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+1. Fork repository
+2. Buat feature branch
+3. Buat perubahan Anda
+4. Tambahkan tests jika diperlukan
+5. Submit pull request
 
-## License
+## Lisensi
 
-MIT License - see LICENSE file for details
+MIT License - lihat file LICENSE untuk detail
 
 ## Support
 
-For issues and questions:
-- Create an issue on GitHub
-- Check the documentation
-- Review the API examples
+Untuk issues dan pertanyaan:
+- Buat issue di GitHub
+- Periksa dokumentasi
+- Review contoh API
 
 ## Troubleshooting
 
-### Common Issues
+### Masalah Umum
 
-1. **"API key not found" error**:
-   - Ensure `.env` file exists in backend directory
-   - Check that API keys are properly set in environment variables
-   - Restart the backend server after changing environment variables
+1. **Error "API key not found"**:
+   - Pastikan file `.env` ada di direktori backend
+   - Periksa bahwa API keys sudah diset dengan benar di environment variables
+   - Restart server backend setelah mengubah environment variables
 
-2. **"Video not found" error**:
-   - Verify the YouTube video ID or URL is correct
-   - Ensure the video is public and comments are enabled
-   - Check if the video exists and is accessible
+2. **Error "Video not found"**:
+   - Verifikasi YouTube video ID atau URL sudah benar
+   - Pastikan video bersifat public dan komentar diaktifkan
+   - Periksa apakah video ada dan dapat diakses
 
 3. **CORS errors**:
-   - Ensure backend is running on port 5000
-   - Check CORS_ORIGINS setting in backend `.env`
-   - Verify frontend is accessing the correct backend URL
+   - Pastikan backend berjalan di port 5000
+   - Periksa pengaturan CORS_ORIGINS di backend `.env`
+   - Verifikasi frontend mengakses URL backend yang benar
 
 4. **Rate limit exceeded**:
-   - YouTube API has daily quotas
-   - Wait for quota reset or request quota increase
-   - Reduce the number of comments processed per request
+   - YouTube API memiliki kuota harian
+   - Tunggu reset kuota atau minta peningkatan kuota
+   - Kurangi jumlah komentar yang diproses per request
 
-### Getting Help
+### Mendapatkan Bantuan
 
-- Check the browser console for error messages
-- Review backend logs for detailed error information
-- Ensure all dependencies are installed correctly
-- Verify API keys have proper permissions
+- Periksa browser console untuk pesan error
+- Review backend logs untuk informasi error yang detail
+- Pastikan semua dependencies terinstall dengan benar
+- Verifikasi API keys memiliki permissions yang tepat
 
 ## Acknowledgments
 
-- Google AI for Gemini API
+- Google AI untuk Gemini API
 - YouTube Data API
-- LangGraph for workflow orchestration
-- Next.js and React communities
-- Tailwind CSS for styling
-- Open source community for tools and libraries
+- LangGraph untuk workflow orchestration
+- Komunitas Next.js dan React
+- Tailwind CSS untuk styling
+- Komunitas open source untuk tools dan libraries
