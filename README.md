@@ -1,6 +1,19 @@
-# YouTube Comment Spam Remover
+# YouTube Spam Detection Tool
 
 An AI-powered tool to detect and remove spam comments from YouTube videos using Gemini AI, built with Flask backend and Next.js frontend.
+
+## 🚀 Quick Start
+
+1. **Clone the repository**:
+   ```bash
+   git clone <repository-url>
+   cd judolslayer
+   ```
+
+2. **Set up the backend** (see [Backend Setup](#backend-setup))
+3. **Set up the frontend** (see [Frontend Setup](#frontend-setup))
+4. **Configure API keys** in environment files
+5. **Start both servers** and visit `http://localhost:3000`
 
 ## Features
 
@@ -32,10 +45,26 @@ An AI-powered tool to detect and remove spam comments from YouTube videos using 
 
 ## Prerequisites
 
-- Python 3.8+
-- Node.js 18+
-- YouTube Data API v3 key
-- Google AI (Gemini) API key
+- **Python 3.8+** with pip
+- **Node.js 18+** with npm
+- **YouTube Data API v3 key** from [Google Cloud Console](https://console.cloud.google.com/)
+- **Google AI (Gemini) API key** from [Google AI Studio](https://makersuite.google.com/)
+- **Git** for version control
+
+### Getting API Keys
+
+1. **YouTube Data API v3**:
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select existing one
+   - Enable YouTube Data API v3
+   - Create credentials (API key)
+   - Restrict the key to YouTube Data API v3 for security
+
+2. **Google AI (Gemini) API**:
+   - Visit [Google AI Studio](https://makersuite.google.com/)
+   - Sign in with your Google account
+   - Create a new API key
+   - Copy the key for use in your environment file
 
 ## Installation
 
@@ -91,7 +120,7 @@ LOG_LEVEL=INFO
 
 6. Run the Flask application:
 ```bash
-python app_enhanced.py
+python app.py
 ```
 
 The backend will be available at `http://localhost:5000`
@@ -161,22 +190,32 @@ curl -X POST http://localhost:5000/api/analyze-comment \
 
 ## Usage
 
-1. **Get API Keys**:
-   - YouTube Data API key from [Google Cloud Console](https://console.cloud.google.com/)
-   - Gemini API key from [Google AI Studio](https://makersuite.google.com/)
+1. **Start the Application**:
+   - Ensure both backend and frontend servers are running
+   - Open `http://localhost:3000` in your browser
 
 2. **Enter Video Information**:
-   - Paste YouTube video ID or URL
+   - Paste YouTube video ID or full URL
    - Configure detection settings (API keys are automatically loaded from environment)
+   - Adjust advanced options if needed
 
 3. **Run Analysis**:
-   - Use "Dry Run" to preview results
-   - Click "Process Video" to detect and remove spam
+   - **Recommended**: Use "Dry Run" first to preview results without making changes
+   - Review the analysis and statistics
+   - If satisfied, disable "Dry Run" and click "Remove Spam" to delete detected spam comments
 
 4. **Review Results**:
-   - View detailed statistics
-   - Filter and sort comments
+   - View detailed statistics and confidence scores
+   - Filter comments by type (All, Spam, Clean)
+   - Sort by confidence, date, or risk level
    - Export results for further analysis
+
+### ⚠️ Important Notes
+
+- **Always test with Dry Run first** to avoid accidentally deleting legitimate comments
+- **Spam removal is permanent** - deleted comments cannot be recovered
+- **Rate limits apply** - YouTube API has daily quotas
+- **Review results carefully** - AI detection may have false positives
 
 ## Configuration
 
@@ -200,12 +239,12 @@ curl -X POST http://localhost:5000/api/analyze-comment \
 
 ```bash
 # Run with auto-reload
-python app_enhanced.py
+python app.py
 
-# Run tests
+# Run tests (if test files exist)
 python -m pytest tests/
 
-# Format code
+# Format code (install tools first: pip install black flake8)
 black .
 flake8 .
 ```
@@ -235,7 +274,7 @@ npm run type-check
 
 1. **Using Gunicorn**:
 ```bash
-gunicorn -w 4 -b 0.0.0.0:5000 app_enhanced:app
+gunicorn -w 4 -b 0.0.0.0:5000 app:app
 ```
 
 2. **Using Docker**:
@@ -246,7 +285,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 COPY . .
 EXPOSE 5000
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app_enhanced:app"]
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app:app"]
 ```
 
 ### Frontend (Next.js)
@@ -269,12 +308,16 @@ vercel
   - All API keys are managed via environment variables
   - Never commit `.env` files to version control
   - Use `.env.example` as a template for required variables
-- **Secret Key**: Automatically generated secure Flask secret key
+  - `credentials.json` is automatically ignored by Git
+- **Secret Key**: Generate a secure Flask secret key for production
 - **Rate Limiting**: Implement proper rate limiting for production
 - **CORS**: Configure CORS properly for your domain
 - **Input Validation**: All inputs are validated and sanitized
 - **Error Handling**: Comprehensive error handling and logging
-- **Git Security**: Comprehensive `.gitignore` file protects sensitive data
+- **Git Security**: 
+  - Comprehensive `.gitignore` file protects sensitive data
+  - OAuth credentials and API keys are excluded from version control
+  - If you accidentally committed sensitive files, remove them from Git history
 
 ## Contributing
 
@@ -295,6 +338,37 @@ For issues and questions:
 - Check the documentation
 - Review the API examples
 
+## Troubleshooting
+
+### Common Issues
+
+1. **"API key not found" error**:
+   - Ensure `.env` file exists in backend directory
+   - Check that API keys are properly set in environment variables
+   - Restart the backend server after changing environment variables
+
+2. **"Video not found" error**:
+   - Verify the YouTube video ID or URL is correct
+   - Ensure the video is public and comments are enabled
+   - Check if the video exists and is accessible
+
+3. **CORS errors**:
+   - Ensure backend is running on port 5000
+   - Check CORS_ORIGINS setting in backend `.env`
+   - Verify frontend is accessing the correct backend URL
+
+4. **Rate limit exceeded**:
+   - YouTube API has daily quotas
+   - Wait for quota reset or request quota increase
+   - Reduce the number of comments processed per request
+
+### Getting Help
+
+- Check the browser console for error messages
+- Review backend logs for detailed error information
+- Ensure all dependencies are installed correctly
+- Verify API keys have proper permissions
+
 ## Acknowledgments
 
 - Google AI for Gemini API
@@ -302,3 +376,4 @@ For issues and questions:
 - LangGraph for workflow orchestration
 - Next.js and React communities
 - Tailwind CSS for styling
+- Open source community for tools and libraries
